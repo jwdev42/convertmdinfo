@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "errors.h"
+#include "wrappers.h"
 #include "mdinfo.h"
 
 /* Helper function for ffmpeg_to_x265. Check global_md_error after using this function */
@@ -36,7 +37,7 @@ uint32_t lum_to_x265(double lum) {
 }
 
 disp_meta_x265* ffmpeg_to_x265(disp_meta_ffmpeg* ffmpeg_disp, disp_lum_ffmpeg* ffmpeg_lum) {
-	disp_meta_x265* meta = malloc(sizeof(disp_meta_x265));
+	disp_meta_x265* meta = md_malloc(sizeof(disp_meta_x265));
 	meta->r = point_to_point_x265(ffmpeg_disp->r);
 	if (global_md_error != ERR_NONE)
 		return NULL;
@@ -61,7 +62,7 @@ disp_meta_x265* ffmpeg_to_x265(disp_meta_ffmpeg* ffmpeg_disp, disp_lum_ffmpeg* f
 char* x265_str(disp_meta_x265* meta) {
 	/* longest producable string "G(12345,12345)B(12345,12345)R(12345,12345)WP(12345,12345)L(1234567890,1234567890)"
 	 * has 81 characters */
-	char* str = malloc(82);
+	char* str = md_malloc(82);
 	sprintf(str, "G(%u,%u)B(%u,%u)R(%u,%u)WP(%u,%u)L(%u,%u)",
 		meta->g.x, meta->g.y, meta->b.x, meta->b.y, meta->r.x, meta->r.y,
 		meta->wp.x, meta->wp.y, meta->max_luminance, meta->min_luminance);
