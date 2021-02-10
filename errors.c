@@ -1,9 +1,9 @@
 /* This file is part of convertmdinfo, (c) 2021 Joerg Walter */
 #include "errors.h"
 
-global_md_errors global_md_error = ERR_NONE;
+md_error_t global_md_error = ERR_NONE;
 
-const char* global_errors_str(global_md_errors err) {
+const char* global_md_error_str(md_error_t err) {
 	switch(err) {
 		case ERR_NONE:
 			return "No error";

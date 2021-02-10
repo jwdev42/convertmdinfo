@@ -2,12 +2,15 @@
 #ifndef _INCL_ERRORS
 #define _INCL_ERRORS
 
-typedef enum { ERR_NONE=0, ERR_OUTOFRANGE } global_md_errors;
+typedef enum { ERR_NONE=0, ERR_OUTOFRANGE } md_error_t;
 
-extern global_md_errors global_md_error;
+/* program-wide error variable */
+extern md_error_t global_md_error;
 
-const char* global_md_errors_str(int err);
+/* global_md_error_str returns an error message for the given error */
+const char* global_md_error_str(md_error_t err);
 
+/* clear_global_md_error sets error value to indicate no error */
 void clear_global_md_error();
 
 #endif
