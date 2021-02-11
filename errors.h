@@ -16,4 +16,7 @@ void clear_global_md_error();
 /* set an error with custom message msg */
 void md_error_custom(const char* msg);
 
+/* if an error is set, exit_on_error will print the error message to stderr and exit the program */
+void exit_on_error();
+
 #endif
