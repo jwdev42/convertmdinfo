@@ -2,7 +2,7 @@
 #ifndef _INCL_ERRORS
 #define _INCL_ERRORS
 
-typedef enum { ERR_NONE=0, ERR_OUTOFRANGE, ERR_CUSTOM } md_error_t;
+typedef enum { ERR_NONE=0, ERR_OUTOFRANGE, ERR_INPUT, ERR_CUSTOM } md_error_t;
 
 /* program-wide error variable */
 extern md_error_t global_md_error;

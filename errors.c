@@ -13,6 +13,8 @@ const char* global_md_error_str(md_error_t err) {
 			return "No error";
 		case ERR_OUTOFRANGE:
 			return "Number out of range";
+		case ERR_INPUT:
+			return "Invalid input";
 		case ERR_CUSTOM:
 			if (error_msg == NULL)
 				return "Undefined custom error";
