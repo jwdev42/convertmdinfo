@@ -1,0 +1,22 @@
+convertmdinfo
+
+ABOUT
+
+HDR10 video needs certain information to be decoded correctly. HEVC
+stores that information using SEI messages. One slice of that
+information is the mastering display metadata that you must specify to
+your HEVC encoder. Normally this data is available in cd/m², however
+the HEVC encoder x265 uses its own format. This is where convertmdinfo
+comes in handy as it simply let's you specify your mastering display
+metadata in cd/m². Your input will then be converted to a string
+that can be passed directly to x265's --master-display option.
+
+BUILD
+
+You can build convertmdinfo using cmake. As the program uses one
+function that is not available in standard C, but specified in POSIX,
+you must build it on a POSIX compatible platform.
+
+MANUAL
+
+A manual exists as man page in the folder man.
