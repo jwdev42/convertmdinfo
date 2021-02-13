@@ -1,0 +1,49 @@
+.TH convertmdinfo 1 2021-02-13 "" "General Commands Manual"
+.SH NAME
+convertmdinfo \- generate a SMPTE ST 2086 mastering display color volume SEI info string for x265
+.SH SYNOPSIS
+.B convertmdinfo
+\fB\-r\fR \fIx\fR \fIy\fR
+\fB\-g\fR \fIx\fR \fIy\fR
+\fB\-b\fR \fIx\fR \fIy\fR
+\fB\-wp\fR \fIx\fR \fIy\fR
+\fB\-lmax\fR \fIluminance\fR
+\fB\-lmin\fR \fIluminance\fR
+.SH DESCRIPTION
+.B convertmdinfo
+receives SMPTE ST 2086 mastering display metadata via command line input.
+This data is then converted and written to the standard output as a string that is
+compatible to \fBx265\fR's \fI\-\-master\-display\fR option.
+.SH OPTIONS
+.TP
+.B \-r \fIx\fR \fIy\fR
+Set the display primaries for the red channel in cd/m^2.
+.TP
+.B \-g \fIx\fR \fIy\fR
+Set the display primaries for the green channel in cd/m^2.
+.TP
+.B \-b \fIx\fR \fIy\fR
+Set the display primaries for the blue channel in cd/m^2.
+.TP
+.B \-wp \fIx\fR \fIy\fR
+Set the white point in cd/m^2.
+.TP
+.B \-lmax \fIluminance\fR
+Set the maximal mastering display luminance in cd/m^2.
+.TP
+.B \-lmin \fIluminance\fR
+Set the minimal mastering display luminance in cd/m^2.
+.SH "EXIT STATUS"
+If convertmdinfo exits normally it returns 0. In case of an error, a non-zero value is returned.
+.SH EXAMPLES
+The command
+.PP
+.RS
+convertmdinfo \-r 0.68 0.32 \-g 0.265 0.69 \-b 0.15 0.06 \-wp 0.3127 0.329 \-lmax 1000 \-lmin 0.0001
+.RE
+.PP
+will produce this output
+.PP
+.RS
+G(13250,34500)B(7500,3000)R(34000,16000)WP(15635,16450)L(10000000,1)
+.RE
