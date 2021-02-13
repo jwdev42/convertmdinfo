@@ -1,6 +1,6 @@
 /* This file is part of convertmdinfo, (c) 2021 Joerg Walter */
-#ifndef _INCL_MDINFO
-#define _INCL_MDINFO
+#ifndef _INCL_WRAPPERS
+#define _INCL_WRAPPERS
 
 #include <stdlib.h>
 
