@@ -11,8 +11,8 @@ point_x265 point_to_point_x265(point p) {
 	const double divisor = 0.00002;
 	clear_global_md_error();
 	point_x265 ip;
-	int bigx = (int) (p.x / divisor);
-	int bigy = (int) (p.y / divisor);
+	int bigx = (int) (p.x / divisor + 0.5);
+	int bigy = (int) (p.y / divisor + 0.5);
 	if (bigx < 0 || bigx > UINT16_MAX || bigy < 0 || bigy > UINT16_MAX) {
 		global_md_error = ERR_OUTOFRANGE;
 		ip.x = 0;
@@ -26,9 +26,9 @@ point_x265 point_to_point_x265(point p) {
 
 /* Helper function for ffmpeg_to_x265. Check global_md_error after using this function */
 uint32_t lum_to_x265(double lum) {
-	const double divisor = 0.00002;
+	const double divisor = 0.0001;
 	clear_global_md_error();
-	int64_t big = (int64_t) (lum / divisor);
+	int64_t big = (int64_t) (lum / divisor + 0.5);
 	if (big < 0 || big > UINT32_MAX) {
 		global_md_error = ERR_OUTOFRANGE;
 		return 0;
