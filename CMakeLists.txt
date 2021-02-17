@@ -1,3 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(convertmdinfo LANGUAGES C)
+if(CMAKE_C_COMPILER_ID STREQUAL GNU)
+	add_compile_options(-Wall -Wextra -std=c18)
+endif()
 add_executable(convertmdinfo cmdline.c  errors.c  eval.c  main.c  mdinfo.c  wrappers.c)
