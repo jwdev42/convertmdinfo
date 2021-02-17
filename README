@@ -13,9 +13,7 @@ that can be passed directly to x265's --master-display option.
 
 BUILD
 
-You can build convertmdinfo using cmake. As the program uses one
-function that is not available in standard C, but specified in POSIX,
-you must build it on a POSIX compatible platform.
+You can build convertmdinfo using cmake. It is compatible to c18.
 
 MANUAL
 
