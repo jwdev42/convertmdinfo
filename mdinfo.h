@@ -27,6 +27,9 @@ disp_meta_ffmpeg* disp_meta_ffmpeg_alloc();
 /*destructor for disp_meta_ffmpeg*/
 void disp_meta_ffmpeg_free(disp_meta_ffmpeg* meta);
 
+/*sets an error if the struct is incomplete*/
+void disp_meta_ffmpeg_verify(disp_meta_ffmpeg* meta);
+
 typedef struct disp_lum_ffmpeg {
 	double min;
 	double max;
@@ -37,6 +40,9 @@ disp_lum_ffmpeg* disp_lum_ffmpeg_alloc();
 
 /*destructor for disp_lum_ffmpeg*/
 void disp_lum_ffmpeg_free(disp_lum_ffmpeg* lum);
+
+/*sets an error if the struct is incomplete or invalid*/
+void disp_lum_ffmpeg_verify(disp_lum_ffmpeg* lum);
 
 typedef struct disp_meta_x265 {
 	point_x265* r;

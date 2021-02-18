@@ -27,15 +27,35 @@ void disp_meta_ffmpeg_free(disp_meta_ffmpeg* meta) {
 	free(meta);
 }
 
+void disp_meta_ffmpeg_verify(disp_meta_ffmpeg* meta) {
+	if (meta->r == NULL)
+		md_error_custom("Red channel not set for master display");
+	else if (meta->g == NULL)
+		md_error_custom("Green channel not set for master display");
+	else if (meta->b == NULL)
+		md_error_custom("Blue channel not set for master display");
+	else if (meta->wp == NULL)
+		md_error_custom("White point not set for master display");
+}
+
 disp_lum_ffmpeg* disp_lum_ffmpeg_alloc() {
 	disp_lum_ffmpeg* lum = md_malloc(sizeof(disp_lum_ffmpeg));
-	lum->min = 0;
-	lum->max = 0;
+	lum->min = -666;
+	lum->max = -666;
 	return lum;
 }
 
 void disp_lum_ffmpeg_free(disp_lum_ffmpeg* lum) {
 	free(lum);
+}
+
+void disp_lum_ffmpeg_verify(disp_lum_ffmpeg* lum) {
+	if (lum->min < 0)
+		md_error_custom("Minimum luminance value not set for master display");
+	else if (lum->max < 0)
+		md_error_custom("Maximum luminance value not set for master display");
+	else if (lum->max < lum->min)
+	md_error_custom("Minimum luminance cannot be greater than maximum luminance");
 }
 
 disp_meta_x265* disp_meta_x265_alloc() {

@@ -27,6 +27,12 @@ int main(int argc, char** argv) {
 	eval_cmdline(sw, meta_ff, lum);
 	exit_on_error();
 	
+	/*verify command line input */
+	disp_meta_ffmpeg_verify(meta_ff);
+	exit_on_error();
+	disp_lum_ffmpeg_verify(lum);
+	exit_on_error();
+	
 	/*convert & print */
 	disp_meta_x265* meta_x265 = ffmpeg_to_x265(meta_ff, lum);
 	exit_on_error();
