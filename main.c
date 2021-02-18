@@ -27,6 +27,9 @@ int main(int argc, char** argv) {
 	eval_cmdline(sw, meta_ff, lum);
 	exit_on_error();
 	
+	/* free command line parser memory */
+	cmdline_free(sw);
+	
 	/*verify command line input */
 	disp_meta_ffmpeg_verify(meta_ff);
 	exit_on_error();

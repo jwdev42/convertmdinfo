@@ -11,13 +11,25 @@ static cmdline_switch* parse_switch(cmdline_switch* sw_first, int pos, int argc,
 static int parse_arguments(cmdline_switch* sw, int pos, int argc, char** argv);
 static cmdline_switch* find_switch(cmdline_switch* sw, const char* s_search);
 
+void cmdline_free(cmdline_switch* sw) {
+	if (sw == NULL)
+		return;
+	cmdline_free(sw->next);
+	if (sw->args != NULL) {
+		for(size_t i = 0; i < sw->argc; i++)
+			free(sw->args[i]);
+		free(sw->args);
+	}
+	free(sw);
+}
+
 cmdline_switch* cmdline_parse(int argc, char** argv) {
 	return parse_switch(NULL, 1, argc, argv);
 }
 
 static int parse_arguments(cmdline_switch* sw, int pos, int argc, char** argv) {
 	char** arguments = NULL;
-	int elements = 0;
+	size_t elements = 0;
 	for(int i = pos; i < argc; i++) {
 		if (argv[i][0] == '-')
 			break; /* end of arguments */
