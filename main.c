@@ -22,16 +22,21 @@ int main(int argc, char** argv) {
 	}
 	
 	/* evaluate command line */
-	disp_meta_ffmpeg meta_ff;
-	disp_lum_ffmpeg lum;
-	eval_cmdline(sw, &meta_ff, &lum);
+	disp_meta_ffmpeg* meta_ff = disp_meta_ffmpeg_alloc();
+	disp_lum_ffmpeg* lum = disp_lum_ffmpeg_alloc();
+	eval_cmdline(sw, meta_ff, lum);
 	exit_on_error();
 	
-	disp_meta_x265* meta_x265 = ffmpeg_to_x265(&meta_ff, &lum);
+	/*convert & print */
+	disp_meta_x265* meta_x265 = ffmpeg_to_x265(meta_ff, lum);
 	exit_on_error();
 	char* display_str = x265_str(meta_x265);
 	printf("%s\n", display_str);
+	
+	/* cleanup */
 	free(display_str);
-	free(meta_x265);
+	disp_meta_x265_free(meta_x265);
+	disp_lum_ffmpeg_free(lum);
+	disp_meta_ffmpeg_free(meta_ff);
 	return 0;
 }

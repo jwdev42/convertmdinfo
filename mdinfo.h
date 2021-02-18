@@ -15,25 +15,43 @@ typedef struct point_x265 {
 } point_x265;
 
 typedef struct disp_meta_ffmpeg {
-	point r;
-	point g;
-	point b;
-	point wp;
+	point* r;
+	point* g;
+	point* b;
+	point* wp;
 } disp_meta_ffmpeg;
+
+/*constructor for disp_meta_ffmpeg*/
+disp_meta_ffmpeg* disp_meta_ffmpeg_alloc();
+
+/*destructor for disp_meta_ffmpeg*/
+void disp_meta_ffmpeg_free(disp_meta_ffmpeg* meta);
 
 typedef struct disp_lum_ffmpeg {
 	double min;
 	double max;
 } disp_lum_ffmpeg;
 
+/*constructor for disp_lum_ffmpeg*/
+disp_lum_ffmpeg* disp_lum_ffmpeg_alloc();
+
+/*destructor for disp_lum_ffmpeg*/
+void disp_lum_ffmpeg_free(disp_lum_ffmpeg* lum);
+
 typedef struct disp_meta_x265 {
-	point_x265 r;
-	point_x265 g;
-	point_x265 b;
-	point_x265 wp;
+	point_x265* r;
+	point_x265* g;
+	point_x265* b;
+	point_x265* wp;
 	uint32_t min_luminance;
 	uint32_t max_luminance;
 } disp_meta_x265;
+
+/*constructor for disp_meta_x265*/
+disp_meta_x265* disp_meta_x265_alloc();
+
+/*destructor for disp_meta_x265*/
+void disp_meta_x265_free(disp_meta_x265* meta);
 
 /* ffmpeg_to_x265 converts ffmpegs representation of hdr display metadata to a format that can be used with x265.
  * In case of an error the function returns NULL and sets global_md_error to something else than ERR_NONE.

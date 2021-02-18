@@ -51,18 +51,21 @@ static double parse_double(const char* input) {
 	return d;
 }
 
-static point eval_point(char** input, int elements) {
-	point p;
-	p.x = 0;
-	p.y = 0;
+static point* eval_point(char** input, int elements) {
+	
 	if (elements != 2) {
 		global_md_error = ERR_INPUT;
-		return p;
+		return NULL;
 	}
-	p.x = parse_double(input[0]);
+	double x = parse_double(input[0]);
 	if (global_md_error != ERR_NONE)
-		return p;
-	p.y = parse_double(input[1]);
+		return NULL;
+	double y = parse_double(input[1]);
+	if (global_md_error != ERR_NONE)
+		return NULL;
+	point* p = md_malloc(sizeof(point));
+	p->x = x;
+	p->y = y;
 	return p;
 }
 
