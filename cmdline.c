@@ -11,6 +11,16 @@ static cmdline_switch* parse_switch(cmdline_switch* sw_first, int pos, int argc,
 static int parse_arguments(cmdline_switch* sw, int pos, int argc, char** argv);
 static cmdline_switch* find_switch(cmdline_switch* sw, const char* s_search);
 
+/* constructor for cmdline_switch, only used internally */
+static cmdline_switch* cmdline_switch_alloc() {
+	cmdline_switch* sw = md_malloc(sizeof(cmdline_switch));
+	sw->id = NULL;
+	sw->args = NULL;
+	sw->argc = 0;
+	sw->next = NULL;
+	return sw;
+}
+
 void cmdline_free(cmdline_switch* sw) {
 	if (sw == NULL)
 		return;
@@ -67,13 +77,14 @@ static cmdline_switch* parse_switch(cmdline_switch* sw_first, int pos, int argc,
 		return NULL;
 	}
 	
-	cmdline_switch* sw = md_malloc(sizeof(cmdline_switch));
+	cmdline_switch* sw = cmdline_switch_alloc();
 	sw->id = argv[pos];
 	parse_arguments(sw, pos + 1, argc, argv);
-	if (sw_first == NULL) {
-		sw_first = sw;
-	}
-	sw->next = parse_switch(sw_first, pos + 1 + sw->argc, argc, argv);
+	if (sw_first == NULL)
+		/* start of the recursion */
+		sw->next = parse_switch(sw, pos + 1 + sw->argc, argc, argv);
+	else
+		sw->next = parse_switch(sw_first, pos + 1 + sw->argc, argc, argv);
 	return sw;
 }
 
