@@ -5,6 +5,6 @@
 #include "cmdline.h"
 #include "mdinfo.h"
 
-disp_meta_ffmpeg* eval_cmdline(cmdline_switch* sw, disp_meta_ffmpeg* meta, disp_lum_ffmpeg* lum);
+disp_meta* eval_cmdline(cmdline_switch* sw, disp_meta* meta, disp_lum* lum);
 
 #endif

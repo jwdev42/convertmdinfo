@@ -6,8 +6,8 @@
 #include "wrappers.h"
 #include "mdinfo.h"
 
-disp_meta_ffmpeg* disp_meta_ffmpeg_alloc() {
-	disp_meta_ffmpeg* meta = md_malloc(sizeof(disp_meta_ffmpeg));
+disp_meta* disp_meta_alloc() {
+	disp_meta* meta = md_malloc(sizeof(disp_meta));
 	meta->r = NULL;
 	meta->g = NULL;
 	meta->b = NULL;
@@ -15,7 +15,7 @@ disp_meta_ffmpeg* disp_meta_ffmpeg_alloc() {
 	return meta;
 }
 
-void disp_meta_ffmpeg_free(disp_meta_ffmpeg* meta) {
+void disp_meta_free(disp_meta* meta) {
 	if (meta->r != NULL)
 		free(meta->r);
 	if (meta->g != NULL)
@@ -27,7 +27,7 @@ void disp_meta_ffmpeg_free(disp_meta_ffmpeg* meta) {
 	free(meta);
 }
 
-void disp_meta_ffmpeg_verify(disp_meta_ffmpeg* meta) {
+void disp_meta_verify(disp_meta* meta) {
 	if (meta->r == NULL)
 		md_error_custom("Red channel not set for master display");
 	else if (meta->g == NULL)
@@ -38,18 +38,18 @@ void disp_meta_ffmpeg_verify(disp_meta_ffmpeg* meta) {
 		md_error_custom("White point not set for master display");
 }
 
-disp_lum_ffmpeg* disp_lum_ffmpeg_alloc() {
-	disp_lum_ffmpeg* lum = md_malloc(sizeof(disp_lum_ffmpeg));
+disp_lum* disp_lum_alloc() {
+	disp_lum* lum = md_malloc(sizeof(disp_lum));
 	lum->min = -666;
 	lum->max = -666;
 	return lum;
 }
 
-void disp_lum_ffmpeg_free(disp_lum_ffmpeg* lum) {
+void disp_lum_free(disp_lum* lum) {
 	free(lum);
 }
 
-void disp_lum_ffmpeg_verify(disp_lum_ffmpeg* lum) {
+void disp_lum_verify(disp_lum* lum) {
 	if (lum->min < 0)
 		md_error_custom("Minimum luminance value not set for master display");
 	else if (lum->max < 0)
@@ -81,7 +81,7 @@ void disp_meta_x265_free(disp_meta_x265* meta) {
 	free(meta);
 }
 
-/* Helper function for ffmpeg_to_x265. Check global_md_error after using this function */
+/* Helper function for meta_to_x265. Check global_md_error after using this function */
 point_x265* point_to_point_x265(const point* p) {
 	const double divisor = 0.00002;
 	clear_global_md_error();
@@ -99,7 +99,7 @@ point_x265* point_to_point_x265(const point* p) {
 	return ip;
 }
 
-/* Helper function for ffmpeg_to_x265. Check global_md_error after using this function */
+/* Helper function for meta_to_x265. Check global_md_error after using this function */
 uint32_t lum_to_x265(double lum) {
 	const double divisor = 0.0001;
 	clear_global_md_error();
@@ -111,27 +111,27 @@ uint32_t lum_to_x265(double lum) {
 	return (uint32_t)big;
 }
 
-disp_meta_x265* ffmpeg_to_x265(disp_meta_ffmpeg* ffmpeg_disp, disp_lum_ffmpeg* ffmpeg_lum) {
-	disp_meta_x265* meta = disp_meta_x265_alloc();
-	meta->r = point_to_point_x265(ffmpeg_disp->r);
+disp_meta_x265* meta_to_x265(disp_meta* meta, disp_lum* lum) {
+	disp_meta_x265* meta_x265 = disp_meta_x265_alloc();
+	meta_x265->r = point_to_point_x265(meta->r);
 	if (global_md_error != ERR_NONE)
 		return NULL;
-	meta->g = point_to_point_x265(ffmpeg_disp->g);
+	meta_x265->g = point_to_point_x265(meta->g);
 	if (global_md_error != ERR_NONE)
 		return NULL;
-	meta->b = point_to_point_x265(ffmpeg_disp->b);
+	meta_x265->b = point_to_point_x265(meta->b);
 	if (global_md_error != ERR_NONE)
 		return NULL;
-	meta->wp = point_to_point_x265(ffmpeg_disp->wp);
+	meta_x265->wp = point_to_point_x265(meta->wp);
 	if (global_md_error != ERR_NONE)
 		return NULL;
-	meta->min_luminance = lum_to_x265(ffmpeg_lum->min);
+	meta_x265->min_luminance = lum_to_x265(lum->min);
 	if (global_md_error != ERR_NONE)
 		return NULL;
-	meta->max_luminance = lum_to_x265(ffmpeg_lum->max);
+	meta_x265->max_luminance = lum_to_x265(lum->max);
 	if (global_md_error != ERR_NONE)
 		return NULL;
-	return meta;
+	return meta_x265;
 }
 
 char* x265_str(disp_meta_x265* meta) {

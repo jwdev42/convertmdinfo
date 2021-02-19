@@ -77,7 +77,7 @@ static double eval_lum(char** input, int elements) {
 	return parse_double(input[0]);
 }
 
-disp_meta_ffmpeg* eval_cmdline(cmdline_switch* sw, disp_meta_ffmpeg* meta, disp_lum_ffmpeg* lum) {
+disp_meta* eval_cmdline(cmdline_switch* sw, disp_meta* meta, disp_lum* lum) {
 	if (sw == NULL)
 		return meta; //base case
 	if (!strcmp("-r", sw->id))
