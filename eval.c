@@ -10,6 +10,7 @@
 #include "errors.h"
 #include "wrappers.h"
 #include "eval.h"
+#include "ffmpeg.h"
 
 /* returns true if the input string represents a floating-point value of zero */
 static bool is_zero(const char* input) {
@@ -77,6 +78,14 @@ static double eval_lum(char** input, int elements) {
 	return parse_double(input[0]);
 }
 
+static disp_meta* eval_ffmpeg(char** input, int elements) {
+	if (elements != 1) {
+		global_md_error = ERR_INPUT;
+		return NULL;
+	}
+	return ffmpeg_recv_meta(input[0]);
+}
+
 disp_meta* eval_cmdline(cmdline_switch* sw, disp_meta* meta, disp_lum* lum) {
 	if (sw == NULL)
 		return meta; //base case
@@ -92,6 +101,8 @@ disp_meta* eval_cmdline(cmdline_switch* sw, disp_meta* meta, disp_lum* lum) {
 		lum->min = eval_lum(sw->args, sw->argc);
 	else if (!strcmp("-lmax", sw->id))
 		lum->max = eval_lum(sw->args, sw->argc);
+	else if (!strcmp("-i", sw->id))
+		return eval_ffmpeg(sw->args, sw->argc);
 	if (global_md_error != ERR_NONE)
 		return NULL;
 	return eval_cmdline(sw->next, meta, lum);
