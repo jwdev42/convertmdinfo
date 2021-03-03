@@ -4,6 +4,6 @@
 
 #include "mdinfo.h"
 
-disp_meta* ffmpeg_recv_meta(const char* path);
+int ffmpeg_recv_meta(const char* path, disp_meta* meta, disp_lum* lum);
 
 #endif

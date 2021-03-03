@@ -1,5 +1,6 @@
 /* This file is part of convertmdinfo, (c) 2021 Joerg Walter */
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "errors.h"
@@ -36,6 +37,13 @@ void md_error_custom(const char* msg) {
 void exit_on_error() {
 	if (global_md_error != ERR_NONE) {
 		fprintf(stderr, "%s\n", global_md_error_str(global_md_error));
+		exit(1);
+	}
+}
+
+void md_bug(const char* file, int line, bool quit) {
+	fprintf(stderr, "BUG triggered in line %d of file %s\n", line, file);
+	if (quit) {
 		exit(1);
 	}
 }

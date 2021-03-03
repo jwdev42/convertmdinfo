@@ -78,12 +78,14 @@ static double eval_lum(char** input, int elements) {
 	return parse_double(input[0]);
 }
 
-static disp_meta* eval_ffmpeg(char** input, int elements) {
+static disp_meta* eval_ffmpeg(char** input, int elements, disp_meta* meta, disp_lum* lum) {
 	if (elements != 1) {
 		global_md_error = ERR_INPUT;
 		return NULL;
 	}
-	return ffmpeg_recv_meta(input[0]);
+	if (ffmpeg_recv_meta(input[0], meta, lum) < 0)
+		return NULL;
+	return meta;
 }
 
 disp_meta* eval_cmdline(cmdline_switch* sw, disp_meta* meta, disp_lum* lum) {
@@ -102,7 +104,7 @@ disp_meta* eval_cmdline(cmdline_switch* sw, disp_meta* meta, disp_lum* lum) {
 	else if (!strcmp("-lmax", sw->id))
 		lum->max = eval_lum(sw->args, sw->argc);
 	else if (!strcmp("-i", sw->id))
-		return eval_ffmpeg(sw->args, sw->argc);
+		return eval_ffmpeg(sw->args, sw->argc, meta, lum);
 	if (global_md_error != ERR_NONE)
 		return NULL;
 	return eval_cmdline(sw->next, meta, lum);
