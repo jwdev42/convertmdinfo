@@ -12,6 +12,8 @@
 #include "wrappers.h"
 #include "ffmpeg.h"
 
+#define MAX_FRAMES 24
+
 static point* conv_meta_point(AVMasteringDisplayMetadata* ffmeta, int index) {
 	if (index > 2 || index < 0) /* prevent index out of range */
 		md_bug(__FILE__, __LINE__, true);
@@ -101,11 +103,16 @@ int ffmpeg_recv_meta(const char* path, disp_meta* meta, disp_lum* lum) {
     pkt.stream_index = video_id;
 	AVFrame* frame = av_frame_alloc();
 	bool found = false;
-	while (av_read_frame(fmt_ctx, &pkt) >= 0) {
+	int fc = 0; /* frame counter */
+	while (true) {
+		if(av_read_frame(fmt_ctx, &pkt) < 0 || fc >= MAX_FRAMES) {
+			break; /* end of stream or error*/
+		}
 		if(pkt.stream_index != video_id) {
 			av_packet_unref(&pkt);
 			continue;
 		}
+		fc++;
 		/* send packet to decoder */
 		int send_status = avcodec_send_packet(dec_ctx, &pkt);
 		if (send_status != 0) {
@@ -167,5 +174,9 @@ int ffmpeg_recv_meta(const char* path, disp_meta* meta, disp_lum* lum) {
 	av_frame_free(&frame);
 	avcodec_free_context(&dec_ctx);
 	avformat_close_input(&fmt_ctx);
+	if(!found) {
+		md_error_custom("Video does not contain mastering display metadata");
+		return -1;
+	}
 	return 0;
 }
