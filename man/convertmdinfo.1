@@ -1,4 +1,4 @@
-.TH convertmdinfo 1 2021-02-13 "" "General Commands Manual"
+.TH convertmdinfo 1 2021-03-03 "" "General Commands Manual"
 .SH NAME
 convertmdinfo \- generate a SMPTE ST 2086 mastering display color volume SEI info string for x265
 .SH SYNOPSIS
@@ -15,6 +15,9 @@ receives SMPTE ST 2086 mastering display metadata via command line input.
 This data is then converted and written to the standard output as a string that is
 compatible to \fBx265\fR's \fI\-\-master\-display\fR option.
 .SH OPTIONS
+.TP
+.B \-i \fIinput_file\fR
+Read the mastering display metadata from video file \fIinput_file\fR using ffmpeg. If this option is selected, other options will be ignored.
 .TP
 .B \-r \fIx\fR \fIy\fR
 Set the display primaries for the red channel in cd/m^2.
