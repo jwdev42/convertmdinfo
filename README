@@ -14,6 +14,7 @@ that can be passed directly to x265's --master-display option.
 BUILD
 
 You can build convertmdinfo using cmake. It is compatible to c18.
+The ffmpeg headers and libraries need to be installed to build convertmdinfo.
 
 MANUAL
 
