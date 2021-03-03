@@ -5,6 +5,6 @@
 #include "cmdline.h"
 #include "mdinfo.h"
 
-disp_meta* eval_cmdline(cmdline_switch* sw, disp_meta* meta, disp_lum* lum);
+disp_meta *eval_cmdline(cmdline_switch *sw, disp_meta *meta, disp_lum *lum);
 
 #endif
