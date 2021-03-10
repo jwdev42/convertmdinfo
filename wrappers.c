@@ -20,6 +20,13 @@ void *md_malloc(size_t size) {
     return ptr;
 }
 
+void *md_calloc(size_t nmemb, size_t size) {
+    void *ptr = calloc(nmemb, size);
+    if (ptr == NULL)
+        memfail();
+    return ptr;
+}
+
 /* wrapper for realloc that exits the program on error. */
 void *md_realloc(void *ptr, size_t size) {
     void *ret_ptr = realloc(ptr, size);

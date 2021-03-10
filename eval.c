@@ -12,6 +12,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef enum {
+    EVAL_UNDEFINED, /*unknown switch*/
+    EVAL_GLOBAL,    /* switch is compatible with every class of command line
+                       switches */
+    EVAL_PRIMARY,   /* switch is part of a manual specification of display
+                       metadata */
+    EVAL_FFMPEG,    /* switch is related to an interaction with ffmpeg */
+} eval_class;
+
+/* forward declarations */
+static void eval_err_undefined(cmdline_switch *sw);
+static void eval_err_class_mismatch(cmdline_switch *sw);
+static int eval_check_conflict(eval_class *history, int offset);
+static disp_meta *eval_cmdline_internal(cmdline_switch *sw, eval_class *history,
+                                        int i, disp_meta *meta, disp_lum *lum);
+
 /* returns true if the input string represents a floating-point value of zero */
 static bool is_zero(const char *input) {
     size_t len = strlen(input);
@@ -90,7 +106,7 @@ static disp_meta *eval_ffmpeg(char **input, int elements, disp_meta *meta,
         return NULL;
     return meta;
 }
-
+/*
 disp_meta *eval_cmdline(cmdline_switch *sw, disp_meta *meta, disp_lum *lum) {
     if (sw == NULL)
         return meta; // base case
@@ -111,4 +127,83 @@ disp_meta *eval_cmdline(cmdline_switch *sw, disp_meta *meta, disp_lum *lum) {
     if (global_md_error != ERR_NONE)
         return NULL;
     return eval_cmdline(sw->next, meta, lum);
+}
+*/
+
+disp_meta *eval_cmdline(cmdline_switch *sw, disp_meta *meta, disp_lum *lum) {
+    eval_class *history = md_calloc(cmdline_elements(sw), sizeof(eval_class));
+    disp_meta *ret = eval_cmdline_internal(sw, history, 0, meta, lum);
+    free(history);
+    return ret;
+}
+
+static disp_meta *eval_cmdline_internal(cmdline_switch *sw, eval_class *history,
+                                        int i, disp_meta *meta, disp_lum *lum) {
+    if (sw == NULL)
+        return meta; // base case
+    if (!strcmp("-r", sw->id)) {
+        *history = EVAL_PRIMARY;
+        meta->r = eval_point(sw->args, sw->argc);
+    } else if (!strcmp("-g", sw->id)) {
+        *history = EVAL_PRIMARY;
+        meta->g = eval_point(sw->args, sw->argc);
+    } else if (!strcmp("-b", sw->id)) {
+        *history = EVAL_PRIMARY;
+        meta->b = eval_point(sw->args, sw->argc);
+    } else if (!strcmp("-wp", sw->id)) {
+        *history = EVAL_PRIMARY;
+        meta->wp = eval_point(sw->args, sw->argc);
+    } else if (!strcmp("-lmin", sw->id)) {
+        *history = EVAL_PRIMARY;
+        lum->min = eval_lum(sw->args, sw->argc);
+    } else if (!strcmp("-lmax", sw->id)) {
+        *history = EVAL_PRIMARY;
+        lum->max = eval_lum(sw->args, sw->argc);
+    } else if (!strcmp("-i", sw->id)) {
+        *history = EVAL_FFMPEG;
+        return eval_ffmpeg(sw->args, sw->argc, meta, lum);
+    } else if (!strcmp("-dynamic", sw->id)) {
+        *history = EVAL_FFMPEG;
+        /* TODO: Implement dynamic metadata scraping */
+    } else if (!strcmp("-o", sw->id)) {
+        *history = EVAL_GLOBAL;
+        /* TODO: Implement output file support */
+    } else
+        eval_err_undefined(sw);
+    if (eval_check_conflict(history, i))
+        eval_err_class_mismatch(sw);
+    if (global_md_error != ERR_NONE)
+        return NULL;
+    return eval_cmdline_internal(sw->next, ++history, ++i, meta, lum);
+}
+
+static int eval_check_conflict(eval_class *history, int offset) {
+    if (offset < 0)
+        md_bug(__FILE__, __LINE__, true);
+    if (*history == EVAL_GLOBAL)
+        return 0;
+    eval_class *start = history - offset;
+    for (int i = 0; i < offset + 1; i++) {
+        eval_class c = start[i];
+        if (c == EVAL_GLOBAL)
+            continue;
+        else if (c != *history)
+            return -1;
+    }
+    return 0;
+}
+
+/* thrown if an unknown command line switch is encountered */
+static void eval_err_undefined(cmdline_switch *sw) {
+    const size_t len = 128;
+    char *msg = md_malloc(len);
+    snprintf(msg, len, "Unknown command line switch \"%s\"", sw->id);
+    md_error_custom(msg);
+}
+
+static void eval_err_class_mismatch(cmdline_switch *sw) {
+    const size_t len = 128;
+    char *msg = md_malloc(len);
+    snprintf(msg, len, "Class mismatch for switch \"%s\"", sw->id);
+    md_error_custom(msg);
 }
