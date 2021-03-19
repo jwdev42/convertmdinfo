@@ -15,7 +15,8 @@ typedef enum {
 } ff_return_t;
 
 int ffmpeg_access_sidedata(const char *path, FILE *ostream,
-                           ff_return_t (*recv_func)(FILE *, AVFrameSideData *));
+                           ff_return_t (*recv_func)(FILE *, AVFrameSideData *),
+                           uint64_t frame_limit);
 
 int ffmpeg_recv_meta(const char *path, disp_meta *meta, disp_lum *lum);
 

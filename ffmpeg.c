@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_FRAMES 24
-
 typedef struct ffbucket {
     AVFormatContext *fmt_ctx;
     AVCodecContext *dec_ctx;
@@ -85,140 +83,9 @@ static void conv_lum(disp_lum *lum, AVMasteringDisplayMetadata *ffmeta) {
     lum->max = av_q2d(ffmeta->max_luminance);
 }
 
-int ffmpeg_recv_meta(const char *path, disp_meta *meta, disp_lum *lum) {
-    /* initialize */
-    ffbucket *bucket = ffbucket_alloc();
-
-    /* enable for debugging */
-    // av_log_set_level(AV_LOG_DEBUG);
-
-    /* open file */
-    if (avformat_open_input(&bucket->fmt_ctx, path, NULL, NULL) != 0)
-        return fferror(bucket, "ffmpeg could not open file");
-
-    if (avformat_find_stream_info(bucket->fmt_ctx, NULL) < 0)
-        return fferror(bucket, "ffmpeg could not retreive stream info");
-
-    /* find video stream */
-    int video_id = av_find_best_stream(bucket->fmt_ctx, AVMEDIA_TYPE_VIDEO, 0,
-                                       -1, NULL, 0);
-    if (video_id < 0)
-        return fferror(bucket, "No video stream in input file");
-
-    /* verify hevc codec */
-    AVCodecParameters *codec_par = bucket->fmt_ctx->streams[video_id]->codecpar;
-    if (codec_par->codec_id != AV_CODEC_ID_HEVC)
-        return fferror(bucket,
-                       "Video stream in input file is not an HEVC stream");
-
-    bucket->decoder = avcodec_find_decoder(codec_par->codec_id);
-    if (bucket->decoder == NULL)
-        return fferror(bucket, "Could not open ffmpeg HEVC decoder");
-
-    bucket->dec_ctx = avcodec_alloc_context3(bucket->decoder);
-    /* copy stream header information to codec context */
-    if (avcodec_parameters_to_context(bucket->dec_ctx, codec_par) < 0)
-        return fferror(bucket,
-                       "Could not copy codec parameters to codec context");
-
-    /* open AVCodecContext */
-    if (avcodec_open2(bucket->dec_ctx, bucket->decoder, NULL) < 0)
-        return fferror(bucket, "Could not initialize ffmpeg AVCodecContext");
-
-    bucket->pkt = av_packet_alloc();
-    av_init_packet(bucket->pkt);
-    bucket->pkt->data = NULL;
-    bucket->pkt->size = 0;
-    bucket->pkt->stream_index = video_id;
-    bucket->frame = av_frame_alloc();
-    bool found = false;
-    int fc = 0; /* frame counter */
-    while (true) {
-        if (av_read_frame(bucket->fmt_ctx, bucket->pkt) < 0 ||
-            fc >= MAX_FRAMES) {
-            break; /* end of stream or error*/
-        }
-        if (bucket->pkt->stream_index != video_id) {
-            av_packet_unref(bucket->pkt);
-            continue;
-        }
-        fc++;
-        /* send packet to decoder */
-        int send_status = avcodec_send_packet(bucket->dec_ctx, bucket->pkt);
-        if (send_status != 0) {
-            if (send_status == AVERROR(ENOMEM))
-                md_bug(__FILE__, __LINE__, true);
-            else if (send_status == AVERROR(EINVAL))
-                md_bug(__FILE__, __LINE__, true);
-            else if (send_status == AVERROR(EAGAIN))
-                md_bug(__FILE__, __LINE__, true);
-            else if (send_status == AVERROR_EOF)
-                md_bug(__FILE__, __LINE__, true);
-            else {
-                /* legitimate decoding error */
-                return fferror(bucket,
-                               "avcodec_send_packet returned decoding error");
-            }
-        }
-        while (true) {
-            int frame_status =
-                avcodec_receive_frame(bucket->dec_ctx, bucket->frame);
-            if (frame_status != 0) {
-                if (frame_status == AVERROR(EAGAIN)) {
-                    if (send_status == AVERROR(EAGAIN)) {
-                        /* this condition leads to undefined behaviour in ffmpeg
-                         * if not catched */
-                        return fferror(
-                            bucket,
-                            "avcodec_send_packet and avcodec_receive_frame "
-                            "both returned EAGAIN");
-                    }
-                    break;
-                } else if (frame_status == AVERROR_EOF)
-                    break;
-                else if (frame_status < 0) {
-                    return fferror(
-                        bucket,
-                        "avcodec_receive_frame returned decoding error");
-                    return -1;
-                } else
-                    md_bug(__FILE__, __LINE__, true);
-            }
-            for (int i = 0; i < bucket->frame->nb_side_data; i++) {
-                AVFrameSideData *sd = bucket->frame->side_data[i];
-                if (sd->type == AV_FRAME_DATA_MASTERING_DISPLAY_METADATA) {
-                    /* these are the droids we are looking for */
-                    AVMasteringDisplayMetadata *ffmeta =
-                        (AVMasteringDisplayMetadata *)sd->data;
-                    if (ffmeta->has_primaries && ffmeta->has_luminance) {
-                        conv_meta(meta, ffmeta);
-                        conv_lum(lum, ffmeta);
-                        found = true;
-                        break;
-                    }
-                }
-            }
-            if (found)
-                break;
-            av_frame_unref(bucket->frame);
-        }
-        if (found)
-            break;
-        av_packet_unref(bucket->pkt);
-        av_init_packet(bucket->pkt);
-    }
-
-    if (!found)
-        return fferror(bucket,
-                       "Video does not contain mastering display metadata");
-
-    ffbucket_free(bucket);
-    return 0;
-}
-
 int ffmpeg_access_sidedata(const char *path, FILE *ostream,
-                           ff_return_t (*recv_func)(FILE *,
-                                                    AVFrameSideData *)) {
+                           ff_return_t (*recv_func)(FILE *, AVFrameSideData *),
+                           uint64_t frame_limit) {
     /* initialize */
     ffbucket *bucket = ffbucket_alloc();
 
@@ -265,11 +132,14 @@ int ffmpeg_access_sidedata(const char *path, FILE *ostream,
     bucket->pkt->stream_index = video_id;
     bucket->frame = av_frame_alloc();
     bool ffabort = false;
-    int fc = 0; /* frame counter */
+    uint64_t fc = 0; /* frame counter */
     while (true) {
-        if (av_read_frame(bucket->fmt_ctx, bucket->pkt) < 0 ||
-            fc >= MAX_FRAMES) {
-            break; /* end of stream or error*/
+        if (av_read_frame(bucket->fmt_ctx, bucket->pkt) < 0) {
+            break; /* end of stream or error */
+        }
+        if (frame_limit > 0) {
+            if (fc >= frame_limit)
+                break; /* frame limit reached */
         }
         if (bucket->pkt->stream_index != video_id) {
             av_packet_unref(bucket->pkt);

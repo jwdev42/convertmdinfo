@@ -12,21 +12,49 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum {
-    EVAL_UNDEFINED, /*unknown switch*/
-    EVAL_GLOBAL,    /* switch is compatible with every class of command line
-                       switches */
-    EVAL_PRIMARY,   /* switch is part of a manual specification of display
-                       metadata */
-    EVAL_FFMPEG,    /* switch is related to an interaction with ffmpeg */
-} eval_class;
-
 /* forward declarations */
 static void eval_err_undefined(cmdline_switch *sw);
 static void eval_err_class_mismatch(cmdline_switch *sw);
-static int eval_check_conflict(eval_class *history, int offset);
-static disp_meta *eval_cmdline_internal(cmdline_switch *sw, eval_class *history,
-                                        int i, disp_meta *meta, disp_lum *lum);
+
+eval_container *eval_container_alloc() {
+    eval_container *ct = md_malloc(sizeof(eval_container));
+    ct->type = EVAL_UNDEFINED;
+    ct->output_file = NULL;
+    ct->col = disp_meta_alloc();
+    ct->lum = disp_lum_alloc();
+    ct->ffinput = NULL;
+    ct->ffdynamic = false;
+    return ct;
+}
+
+void eval_container_free(eval_container *ct) {
+    if (ct->output_file)
+        free(ct->output_file);
+    if (ct->ffinput)
+        free(ct->ffinput);
+    if (ct->col)
+        disp_meta_free(ct->col);
+    if (ct->lum)
+        disp_lum_free(ct->lum);
+    free(ct);
+}
+
+/* set the type of the container, abort program on type conflict */
+void eval_container_type(eval_container *ct, eval_class type,
+                         cmdline_switch *sw) {
+    switch (ct->type) {
+    case EVAL_GLOBAL:
+        return; /* ignore global args */
+    case EVAL_UNDEFINED:
+        ct->type = type;
+        return;
+    default:
+        if (ct->type != type) {
+            eval_err_class_mismatch(sw);
+            exit_on_error();
+        }
+    }
+}
 
 /* returns true if the input string represents a floating-point value of zero */
 static bool is_zero(const char *input) {
@@ -96,101 +124,48 @@ static double eval_lum(char **input, int elements) {
     return parse_double(input[0]);
 }
 
-static disp_meta *eval_ffmpeg(char **input, int elements, disp_meta *meta,
-                              disp_lum *lum) {
+char *eval_file(char **input, int elements) {
     if (elements != 1) {
         global_md_error = ERR_INPUT;
         return NULL;
     }
-    if (ffmpeg_recv_meta(input[0], meta, lum) < 0)
-        return NULL;
-    return meta;
-}
-/*
-disp_meta *eval_cmdline(cmdline_switch *sw, disp_meta *meta, disp_lum *lum) {
-    if (sw == NULL)
-        return meta; // base case
-    if (!strcmp("-r", sw->id))
-        meta->r = eval_point(sw->args, sw->argc);
-    else if (!strcmp("-g", sw->id))
-        meta->g = eval_point(sw->args, sw->argc);
-    else if (!strcmp("-b", sw->id))
-        meta->b = eval_point(sw->args, sw->argc);
-    else if (!strcmp("-wp", sw->id))
-        meta->wp = eval_point(sw->args, sw->argc);
-    else if (!strcmp("-lmin", sw->id))
-        lum->min = eval_lum(sw->args, sw->argc);
-    else if (!strcmp("-lmax", sw->id))
-        lum->max = eval_lum(sw->args, sw->argc);
-    else if (!strcmp("-i", sw->id))
-        return eval_ffmpeg(sw->args, sw->argc, meta, lum);
-    if (global_md_error != ERR_NONE)
-        return NULL;
-    return eval_cmdline(sw->next, meta, lum);
-}
-*/
-
-disp_meta *eval_cmdline(cmdline_switch *sw, disp_meta *meta, disp_lum *lum) {
-    eval_class *history = md_calloc(cmdline_elements(sw), sizeof(eval_class));
-    disp_meta *ret = eval_cmdline_internal(sw, history, 0, meta, lum);
-    free(history);
-    return ret;
+    return md_strdup(input[0]);
 }
 
-static disp_meta *eval_cmdline_internal(cmdline_switch *sw, eval_class *history,
-                                        int i, disp_meta *meta, disp_lum *lum) {
+eval_container *eval_cmdline(eval_container *ct, cmdline_switch *sw) {
     if (sw == NULL)
-        return meta; // base case
+        return ct; // base case
     if (!strcmp("-r", sw->id)) {
-        *history = EVAL_PRIMARY;
-        meta->r = eval_point(sw->args, sw->argc);
+        eval_container_type(ct, EVAL_PRIMARY, sw);
+        ct->col->r = eval_point(sw->args, sw->argc);
     } else if (!strcmp("-g", sw->id)) {
-        *history = EVAL_PRIMARY;
-        meta->g = eval_point(sw->args, sw->argc);
+        eval_container_type(ct, EVAL_PRIMARY, sw);
+        ct->col->g = eval_point(sw->args, sw->argc);
     } else if (!strcmp("-b", sw->id)) {
-        *history = EVAL_PRIMARY;
-        meta->b = eval_point(sw->args, sw->argc);
+        eval_container_type(ct, EVAL_PRIMARY, sw);
+        ct->col->b = eval_point(sw->args, sw->argc);
     } else if (!strcmp("-wp", sw->id)) {
-        *history = EVAL_PRIMARY;
-        meta->wp = eval_point(sw->args, sw->argc);
+        eval_container_type(ct, EVAL_PRIMARY, sw);
+        ct->col->wp = eval_point(sw->args, sw->argc);
     } else if (!strcmp("-lmin", sw->id)) {
-        *history = EVAL_PRIMARY;
-        lum->min = eval_lum(sw->args, sw->argc);
+        eval_container_type(ct, EVAL_PRIMARY, sw);
+        ct->lum->min = eval_lum(sw->args, sw->argc);
     } else if (!strcmp("-lmax", sw->id)) {
-        *history = EVAL_PRIMARY;
-        lum->max = eval_lum(sw->args, sw->argc);
+        eval_container_type(ct, EVAL_PRIMARY, sw);
+        ct->lum->max = eval_lum(sw->args, sw->argc);
     } else if (!strcmp("-i", sw->id)) {
-        *history = EVAL_FFMPEG;
-        return eval_ffmpeg(sw->args, sw->argc, meta, lum);
+        eval_container_type(ct, EVAL_FFMPEG, sw);
+        ct->ffinput = eval_file(sw->args, sw->argc);
     } else if (!strcmp("-dynamic", sw->id)) {
-        *history = EVAL_FFMPEG;
-        /* TODO: Implement dynamic metadata scraping */
+        eval_container_type(ct, EVAL_FFMPEG, sw);
+        ct->ffdynamic = true;
     } else if (!strcmp("-o", sw->id)) {
-        *history = EVAL_GLOBAL;
-        /* TODO: Implement output file support */
+        ct->output_file = eval_file(sw->args, sw->argc);
     } else
         eval_err_undefined(sw);
-    if (eval_check_conflict(history, i))
-        eval_err_class_mismatch(sw);
     if (global_md_error != ERR_NONE)
         return NULL;
-    return eval_cmdline_internal(sw->next, ++history, ++i, meta, lum);
-}
-
-static int eval_check_conflict(eval_class *history, int offset) {
-    if (offset < 0)
-        md_bug(__FILE__, __LINE__, true);
-    if (*history == EVAL_GLOBAL)
-        return 0;
-    eval_class *start = history - offset;
-    for (int i = 0; i < offset + 1; i++) {
-        eval_class c = start[i];
-        if (c == EVAL_GLOBAL)
-            continue;
-        else if (c != *history)
-            return -1;
-    }
-    return 0;
+    return eval_cmdline(ct, sw->next);
 }
 
 /* thrown if an unknown command line switch is encountered */
