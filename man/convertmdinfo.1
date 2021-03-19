@@ -15,6 +15,12 @@ receives SMPTE ST 2086 mastering display metadata via command line input.
 This data is then converted and written to the standard output as a string that is
 compatible to \fBx265\fR's \fI\-\-master\-display\fR option.
 .SH OPTIONS
+.B general options:
+.RS
+.TP
+.B \-o \fIoutput_file\fR
+Set output file (Caution: Existing file will be overwritten).
+.RE
 .B ffmpeg mode:
 .RS
 .TP
@@ -43,7 +49,7 @@ Set the maximal mastering display luminance in cd/m^2.
 Set the minimal mastering display luminance in cd/m^2.
 .RE
 .PP
-ffmpeg mode and manual mode arguments cannot be mixed!
+Arguments of different modes cannot be mixed. General options work in every mode.
 .SH "EXIT STATUS"
 If convertmdinfo exits normally it returns 0. In case of an error, a non-zero value is returned.
 .SH EXAMPLES
